@@ -1,6 +1,9 @@
 import { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { getServerSession } from "next-auth/next"
 
-import { SiteHeader } from "../../components/site-header"
+import { SiteHeader } from "../../../components/site-header"
+import { authOptions } from "../../../auth/auth-options"
 
 export const metadata: Metadata = {
   title: {
@@ -14,7 +17,15 @@ interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default async function DashboardLayout({
+  children,
+}: DashboardLayoutProps) {
+  const session = await getServerSession(authOptions)
+
+  if (!session) {
+    redirect("/auth/signin")
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col">
       <SiteHeader />
