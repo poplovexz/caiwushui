@@ -44,61 +44,70 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
     const signInResult = await signIn("credentials", {
       email: data.email.toLowerCase(),
       password: data.password,
-      redirect: true,
+      redirect: false,
       callbackUrl: searchParams?.get("from") || "/dashboard",
     })
 
     setIsLoading(false)
 
     if (!signInResult?.ok) {
-      return toast.error("登录失败")
+      if (signInResult?.error === "CredentialsSignin") {
+        toast.error("邮箱或密码错误")
+        return
+      }
+      toast.error("登录失败，请稍后重试")
+      return
     }
 
-    toast.success("登录成功")
+    window.location.href = signInResult.url || "/dashboard"
   }
 
   return (
     <div className={cn("grid gap-6", className)} {...props}>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid gap-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>邮箱</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="name@example.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>密码</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button disabled={isLoading}>
-              {isLoading && (
-                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              登录
-            </Button>
-          </div>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>邮箱</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder="请输入邮箱"
+                    disabled={isLoading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>密码</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="请输入密码"
+                    disabled={isLoading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading && (
+              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            登录
+          </Button>
         </form>
       </Form>
     </div>
