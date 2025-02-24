@@ -23,7 +23,7 @@ declare module "next-auth" {
       role: UserRole
       email: string
       name: string
-    }
+    } & DefaultSession["user"]
   }
 }
 
