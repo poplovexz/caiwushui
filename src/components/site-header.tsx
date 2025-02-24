@@ -1,7 +1,9 @@
+"use client"
+
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "../components/ui/button"
 
 export function SiteHeader() {
   return (

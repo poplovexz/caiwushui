@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 
-import { SiteHeader } from "@/components/site-header"
+import { SiteHeader } from "../../components/site-header"
 
 export const metadata: Metadata = {
   title: {

@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth/next"
 
-import { authOptions } from "@/auth/auth-options"
+import { authOptions } from "../../auth/auth-options"
 
 export const metadata: Metadata = {
   title: "仪表板",
