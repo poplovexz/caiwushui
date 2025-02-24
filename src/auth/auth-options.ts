@@ -29,11 +29,19 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          const user = await prisma.user.findUnique({
+          const email = credentials.email.toLowerCase()
+          console.log("正在查找用户:", email)
+
+          const user = await prisma.user.findFirst({
             where: {
-              email: credentials.email,
+              email: {
+                equals: email,
+                mode: "insensitive",
+              },
             },
           })
+
+          console.log("查找结果:", user)
 
           if (!user) {
             console.log("用户不存在")
