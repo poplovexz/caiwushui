@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("请输入邮箱和密码")
+          return null
         }
 
         const user = await prisma.user.findUnique({
@@ -34,19 +34,20 @@ export const authOptions: NextAuthOptions = {
         })
 
         if (!user) {
-          throw new Error("用户不存在")
+          return null
         }
 
         const isValid = await compare(credentials.password, user.password)
 
         if (!isValid) {
-          throw new Error("密码错误")
+          return null
         }
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
+          role: user.role,
         }
       },
     }),
@@ -57,6 +58,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.email = user.email
         token.name = user.name
+        token.role = user.role
       }
       return token
     },
@@ -65,6 +67,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.email = token.email
         session.user.name = token.name
+        session.user.role = token.role
       }
       return session
     },
