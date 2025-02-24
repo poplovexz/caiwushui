@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "../../components/ui/dialog"
 import {
   Form,
   FormControl,
@@ -21,8 +21,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+} from "../../components/ui/form"
+import { Input } from "../../components/ui/input"
 import {
   Select,
   SelectContent,
@@ -33,12 +33,16 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Plus } from "lucide-react"
 import { enterpriseSchema, EnterpriseStatus, EnterpriseType } from "@/types/enterprise"
+import { toast } from "sonner"
+import { z } from "zod"
+
+type FormData = z.infer<typeof enterpriseSchema>
 
 export function CreateEnterprise() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
-  const form = useForm({
+  const form = useForm<FormData>({
     resolver: zodResolver(enterpriseSchema),
     defaultValues: {
       name: "",
@@ -55,26 +59,26 @@ export function CreateEnterprise() {
     },
   })
 
-  async function onSubmit(values: any) {
+  async function onSubmit(data: FormData) {
     try {
       const response = await fetch("/api/enterprises", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(data),
       })
 
       if (!response.ok) {
         throw new Error("创建企业失败")
       }
 
+      toast.success("创建企业成功")
       setOpen(false)
       form.reset()
       router.refresh()
     } catch (error) {
-      console.error("创建企业出错:", error)
-      alert("创建企业失败")
+      toast.error("创建企业失败")
     }
   }
 
@@ -276,7 +280,9 @@ export function CreateEnterprise() {
             />
 
             <DialogFooter>
-              <Button type="submit">创建企业</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                创建企业
+              </Button>
             </DialogFooter>
           </form>
         </Form>
