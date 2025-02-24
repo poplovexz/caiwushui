@@ -59,3 +59,102 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+// 企业基本信息
+model Enterprise {
+  id                String    @id @default(cuid())
+  name              String    // 企业名称
+  unifiedSocialCode String    @unique // 统一社会信用代码
+  registrationDate  DateTime  // 注册日期
+  legalPerson       String    // 法人
+  registeredCapital Decimal   // 注册资本
+  paidInCapital     Decimal?  // 实缴资本
+  status            String    // 经营状态
+  type              String    // 企业类型
+  industry          String    // 所属行业
+  registrationAuth  String    // 登记机关
+  approvalDate      DateTime  // 核准日期
+  district          String    // 所属地区
+  address           String    // 企业地址
+  businessScope     String    // 经营范围
+  employees         Int?      // 员工人数
+  phone             String?   // 联系电话
+  email             String?   // 联系邮箱
+  website          String?   // 官网
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  dataSource       String    @default("manual") // manual: 手动输入, crawler: 爬虫采集
+  lastCrawled      DateTime? // 最后爬取时间
+  
+  // 关联信息
+  branches         EnterpriseBranch[]
+  shareholders     Shareholder[]
+  investments      Investment[]
+  changes          EnterpriseChange[]
+  annualReports    AnnualReport[]
+}
+
+// 企业分支机构
+model EnterpriseBranch {
+  id            String     @id @default(cuid())
+  enterpriseId  String
+  name          String
+  address       String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  enterprise    Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+}
+
+// 股东信息
+model Shareholder {
+  id            String     @id @default(cuid())
+  enterpriseId  String
+  name          String
+  type          String     // 自然人/企业
+  contribution  Decimal    // 认缴出资额
+  ratio         Decimal    // 持股比例
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  enterprise    Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+}
+
+// 对外投资
+model Investment {
+  id            String     @id @default(cuid())
+  enterpriseId  String
+  investedName  String     // 被投资企业名称
+  amount        Decimal    // 投资金额
+  ratio         Decimal    // 投资比例
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  enterprise    Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+}
+
+// 工商变更
+model EnterpriseChange {
+  id            String     @id @default(cuid())
+  enterpriseId  String
+  changeItem    String     // 变更项目
+  beforeChange  String     // 变更前
+  afterChange   String     // 变更后
+  changeDate    DateTime   // 变更日期
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  enterprise    Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+}
+
+// 年报信息
+model AnnualReport {
+  id            String     @id @default(cuid())
+  enterpriseId  String
+  year          Int
+  totalAssets   Decimal?   // 资产总额
+  totalEquity   Decimal?   // 所有者权益
+  totalRevenue  Decimal?   // 营业总收入
+  totalProfit   Decimal?   // 利润总额
+  employees     Int?       // 员工人数
+  reportDate    DateTime   // 报告日期
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  enterprise    Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+}
