@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { Button } from "../../components/ui/button"
 import {
@@ -29,10 +30,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Plus } from "lucide-react"
-import { enterpriseSchema, EnterpriseStatus, EnterpriseType } from "@/types/enterprise"
+} from "../../components/ui/select"
+import { enterpriseSchema } from "../../lib/validations/enterprise"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -46,16 +45,9 @@ export function CreateEnterprise() {
     resolver: zodResolver(enterpriseSchema),
     defaultValues: {
       name: "",
-      unifiedSocialCode: "",
-      legalPerson: "",
-      registeredCapital: 0,
-      status: EnterpriseStatus.NORMAL,
-      type: EnterpriseType.LIMITED,
-      industry: "",
-      registrationAuth: "",
-      district: "",
-      address: "",
-      businessScope: "",
+      unifiedSocialCreditCode: "",
+      registeredCapital: "",
+      establishmentDate: "",
     },
   })
 
@@ -87,14 +79,14 @@ export function CreateEnterprise() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          新增企业
+          添加企业
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>新增企业</DialogTitle>
+          <DialogTitle>添加企业</DialogTitle>
           <DialogDescription>
-            添加新的企业信息到系统中。请填写以下必要信息。
+            请填写企业基本信息，所有字段都是必填的。
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -112,10 +104,9 @@ export function CreateEnterprise() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
-              name="unifiedSocialCode"
+              name="unifiedSocialCreditCode"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>统一社会信用代码</FormLabel>
@@ -126,162 +117,35 @@ export function CreateEnterprise() {
                 </FormItem>
               )}
             />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="legalPerson"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>法人代表</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="registeredCapital"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>注册资本（万元）</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(parseFloat(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>经营状态</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(EnterpriseStatus).map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>企业类型</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(EnterpriseType).map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>所属行业</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="district"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>所属地区</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
-              name="address"
+              name="registeredCapital"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>企业地址</FormLabel>
+                  <FormLabel>注册资本（万元）</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input type="number" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
-              name="businessScope"
+              name="establishmentDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>经营范围</FormLabel>
+                  <FormLabel>成立日期</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                创建企业
+                提交
               </Button>
             </DialogFooter>
           </form>
