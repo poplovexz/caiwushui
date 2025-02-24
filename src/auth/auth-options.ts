@@ -23,31 +23,40 @@ export const authOptions: NextAuthOptions = {
         password: { label: "密码", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log("缺少邮箱或密码")
+            return null
+          }
+
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email,
+            },
+          })
+
+          if (!user) {
+            console.log("用户不存在")
+            return null
+          }
+
+          const isValid = await compare(credentials.password, user.password)
+          console.log("密码验证结果:", isValid)
+
+          if (!isValid) {
+            console.log("密码错误")
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error("认证错误:", error)
           return null
-        }
-
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        })
-
-        if (!user) {
-          return null
-        }
-
-        const isValid = await compare(credentials.password, user.password)
-
-        if (!isValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
         }
       },
     }),
