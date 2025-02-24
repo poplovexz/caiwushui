@@ -1,9 +1,9 @@
 import { Suspense } from "react"
-import { EnterpriseList } from "@/components/enterprise/enterprise-list"
-import { EnterpriseSearch } from "@/components/enterprise/enterprise-search"
-import { Heading } from "@/components/ui/heading"
-import { Separator } from "@/components/ui/separator"
-import { CreateEnterprise } from "@/components/enterprise/create-enterprise"
+import { EnterpriseList } from "../../../components/enterprise/enterprise-list"
+import { EnterpriseSearch } from "../../../components/enterprise/enterprise-search"
+import { Heading } from "../../../components/ui/heading"
+import { Separator } from "../../../components/ui/separator"
+import { CreateEnterprise } from "../../../components/enterprise/create-enterprise"
 
 export default function EnterprisesPage() {
   return (
