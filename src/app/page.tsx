@@ -6,8 +6,10 @@ export default async function Home() {
   const session = await getServerSession(authOptions)
   
   if (!session) {
-    redirect("/auth/signin")
+    redirect("/(auth)/signin")
   }
+  
+  redirect("/enterprises")
   
   return (
     <div className="container mx-auto p-4">

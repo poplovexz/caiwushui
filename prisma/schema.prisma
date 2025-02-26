@@ -10,38 +10,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String
-  emailVerified DateTime?
-  image         String?
-  role          String    @default("user")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts      Account[]
-  sessions      Session[]
-}
-
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -50,6 +36,19 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("user")
+  accounts      Account[]
+  sessions      Session[]
 }
 
 model VerificationToken {
@@ -58,4 +57,88 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Enterprise {
+  id                String      @id @default(cuid())
+  name              String
+  unifiedSocialCode String      @unique
+  legalPerson       String
+  registeredCapital Float
+  foundingDate      DateTime
+  businessScope     String
+  address           String
+  contactNumber     String
+  email            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  deletedAt        DateTime?
+  taxRecords       TaxRecord[]
+  socialRecords    SocialRecord[]
+  versionRecords   VersionRecord[]
+}
+
+model TaxRecord {
+  id            String     @id @default(cuid())
+  enterpriseId  String
+  enterprise    Enterprise @relation(fields: [enterpriseId], references: [id])
+  year          Int
+  month         Int
+  taxableIncome Float
+  taxAmount     Float
+  paidAmount    Float
+  taxType       String
+  paymentStatus String
+  dueDate       String
+  paymentDate   String?
+  remarks       String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
+
+  @@index([enterpriseId])
+  @@index([year, month])
+  @@index([taxType])
+  @@index([paymentStatus])
+}
+
+model SocialRecord {
+  id            String      @id @default(cuid())
+  enterpriseId  String
+  enterprise    Enterprise  @relation(fields: [enterpriseId], references: [id])
+  employeeName  String
+  idNumber      String
+  insuranceType String
+  baseAmount    Float
+  personalAmount Float
+  companyAmount Float
+  totalAmount   Float
+  paymentStatus String
+  paymentDate   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+}
+
+model VersionRecord {
+  id            String      @id @default(cuid())
+  enterpriseId  String
+  enterprise    Enterprise  @relation(fields: [enterpriseId], references: [id])
+  fileName      String
+  fileType      String      // 文件类型，如 pdf, doc 等
+  fileSize      Int         // 文件大小，单位字节
+  fileUrl       String      // 文件存储路径
+  version       String      // 版本号
+  status        String      // 状态：待审核、已通过、已驳回
+  uploadTime    DateTime    @default(now())
+  reviewTime    DateTime?   // 审核时间
+  reviewResult  String?     // 审核结果
+  reviewComment String?     // 审核意见
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  @@index([enterpriseId])
+  @@index([status])
+  @@index([uploadTime])
 }
