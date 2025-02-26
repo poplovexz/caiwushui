@@ -45,7 +45,23 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   pages: {
-    signIn: "/auth/signin"
+    signIn: "/signin",
+    error: "/error",
+    signOut: "/signin"
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.role = token.role as string
+      }
+      return session
+    }
   },
   secret: process.env.NEXTAUTH_SECRET,
 }

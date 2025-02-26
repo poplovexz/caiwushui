@@ -47,6 +47,7 @@ model User {
   emailVerified DateTime?
   image         String?
   role          String    @default("user")
+  password      String    // 添加密码字段
   accounts      Account[]
   sessions      Session[]
 }
@@ -76,6 +77,10 @@ model Enterprise {
   taxRecords       TaxRecord[]
   socialRecords    SocialRecord[]
   versionRecords   VersionRecord[]
+  taxPaymentFiles  TaxPaymentFile[]
+  financeRecords   FinanceRecord[]
+  financialReports FinancialReport[]
+  taxRefunds       TaxRefund[]
 }
 
 model TaxRecord {
@@ -95,11 +100,15 @@ model TaxRecord {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   deletedAt     DateTime?
+  taxNumber     String     // 添加税号字段
+  taxRefund     TaxRefund? @relation(fields: [taxRefundId], references: [id])
+  taxRefundId   String?
 
   @@index([enterpriseId])
   @@index([year, month])
   @@index([taxType])
   @@index([paymentStatus])
+  @@index([taxRefundId])
 }
 
 model SocialRecord {
@@ -141,4 +150,115 @@ model VersionRecord {
   @@index([enterpriseId])
   @@index([status])
   @@index([uploadTime])
+}
+
+model TaxPaymentFile {
+  id              String    @id @default(cuid())
+  fileName        String    // 文件名称
+  fileType        String    // 文件类型
+  processStatus   String    // 处理状态：待处理、处理中、已处理
+  processTime     DateTime? // 处理时间
+  serialNumber    String    // NO编号
+  enterpriseId    String    // 关联企业ID
+  enterprise      Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+  taxpayerId      String    // 纳税人识别号
+  totalAmount     Float     // 合计金额
+  uploadTime      DateTime  @default(now()) // 上传时间
+  filePath        String    // 文件存储路径
+  remarks         String?   // 备注
+  
+  @@index([enterpriseId])
+  @@index([processStatus])
+  @@index([uploadTime])
+}
+
+model FinanceRecord {
+  id           String    @id @default(cuid())
+  fileName     String
+  taxNumber    Decimal   @db.Decimal(10, 2)
+  year         String
+  period       String
+  taxpayerId   String
+  uploadTime   DateTime
+  processStatus String   // 未处理、处理中、已处理
+  taxpayerName String
+  processType  String    // 人工处理、自动处理
+  filePath     String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  processTime  DateTime?
+  enterpriseId String
+  enterprise   Enterprise @relation(fields: [enterpriseId], references: [id])
+
+  @@index([taxpayerId])
+  @@index([processStatus])
+  @@index([uploadTime])
+  @@index([enterpriseId])
+}
+
+model FinancialReport {
+  id             String    @id @default(cuid())
+  fileName       String    // 文件名称
+  reportType     String    // 报表类型：资产负债表、利润表、现金流量表等
+  year           String    // 年度
+  quarter        String    // 季度：Q1、Q2、Q3、Q4
+  period         String    // 所属期间
+  totalAssets    Decimal   @db.Decimal(15, 2)  // 总资产
+  totalLiability Decimal   @db.Decimal(15, 2)  // 总负债
+  netAssets     Decimal   @db.Decimal(15, 2)  // 净资产
+  revenue       Decimal   @db.Decimal(15, 2)  // 营业收入
+  profit        Decimal   @db.Decimal(15, 2)  // 净利润
+  uploadTime    DateTime  // 上传时间
+  processStatus String    // 处理状态：未处理、处理中、已处理
+  processType   String    // 处理方式：人工处理、自动处理
+  filePath      String    // 文件路径
+  remarks       String?   // 备注
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  processTime   DateTime? // 处理时间
+  enterpriseId  String    // 关联企业ID
+  enterprise    Enterprise @relation(fields: [enterpriseId], references: [id])
+
+  @@index([enterpriseId])
+  @@index([processStatus])
+  @@index([uploadTime])
+  @@index([year, quarter])
+}
+
+model TaxRefund {
+  id             String      @id @default(cuid())
+  taxNumber      String
+  taxPeriod      String
+  taxAmount      Decimal     @db.Decimal(15, 2)
+  baseAmount     Decimal     @db.Decimal(15, 2)
+  refundRate     Decimal     @db.Decimal(5, 2)
+  refundAmount   Decimal     @db.Decimal(15, 2)
+  personalAmount Decimal     @db.Decimal(15, 2)
+  companyAmount  Decimal     @db.Decimal(15, 2)
+  landAmount     Decimal     @db.Decimal(15, 2)
+  propertyAmount Decimal     @db.Decimal(15, 2)
+  otherAmount    Decimal     @db.Decimal(15, 2)
+  totalAmount    Decimal     @db.Decimal(15, 2)
+  status         String      // 未处理、处理中、已处理
+  enterpriseId   String
+  enterprise     Enterprise  @relation(fields: [enterpriseId], references: [id])
+  taxRecords     TaxRecord[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([enterpriseId])
+  @@index([status])
+  @@index([taxPeriod])
+}
+
+model TaxRefundConfig {
+  id        String   @id @default(cuid())
+  name      String   // 企业所得税、个人所得税等
+  rate      Decimal  @db.Decimal(5, 2)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([isActive])
 }

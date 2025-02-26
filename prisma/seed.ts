@@ -1,158 +1,227 @@
-const { PrismaClient } = require("@prisma/client")
-const { faker } = require("@faker-js/faker/locale/zh_CN")
+import { PrismaClient } from '@prisma/client'
+import { hash } from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // 清除现有数据
-  await prisma.socialRecord.deleteMany()
-  await prisma.taxRecord.deleteMany()
-  await prisma.enterprise.deleteMany()
-  await prisma.user.deleteMany()
+  try {
+    // 清理现有数据
+    await prisma.taxRefund.deleteMany()
+    await prisma.taxRecord.deleteMany()
+    await prisma.taxRefundConfig.deleteMany()
+    await prisma.financialReport.deleteMany()
+    await prisma.financeRecord.deleteMany()
+    await prisma.socialRecord.deleteMany()
+    await prisma.enterprise.deleteMany()
+    await prisma.user.deleteMany()
 
-  // 创建管理员用户
-  await prisma.user.create({
-    data: {
-      email: "admin@example.com",
-      name: "管理员",
-      role: "admin",
-    },
-  })
+    // 创建测试用户
+    const hashedPassword = await hash('123456', 12)
+    const user = await prisma.user.create({
+      data: {
+        name: '管理员',
+        email: 'admin@example.com',
+        role: 'admin',
+        password: hashedPassword
+      }
+    })
+    console.log('创建用户成功:', user.email)
 
-  // 生成20条企业数据
-  const enterprises = Array.from({ length: 20 }).map(() => ({
-    name: faker.company.name(),
-    unifiedSocialCode: faker.string.numeric(18),
-    legalPerson: faker.person.fullName(),
-    registeredCapital: faker.number.int({ min: 100000, max: 10000000 }),
-    foundingDate: faker.date.past({ years: 30 }).toISOString(),
-    businessScope: faker.company.catchPhrase(),
-    address: faker.location.streetAddress(),
-    contactNumber: faker.phone.number(),
-    email: faker.internet.email(),
-  }))
+    // 创建企业数据
+    const enterprises = await Promise.all([
+      prisma.enterprise.create({
+        data: {
+          name: '阿里巴巴（中国）有限公司',
+          unifiedSocialCode: '91330100799655058B',
+          legalPerson: '张勇',
+          registeredCapital: 1500000000,
+          foundingDate: new Date('2010-01-01'),
+          businessScope: '互联网服务',
+          address: '浙江省杭州市余杭区文一西路969号',
+          contactNumber: '0571-88888888',
+          email: 'contact@alibaba.com'
+        }
+      }),
+      prisma.enterprise.create({
+        data: {
+          name: '腾讯科技（深圳）有限公司',
+          unifiedSocialCode: '91440300708461136T',
+          legalPerson: '马化腾',
+          registeredCapital: 1000000000,
+          foundingDate: new Date('2011-02-15'),
+          businessScope: '互联网服务',
+          address: '广东省深圳市南山区高新区科技中一路腾讯大厦',
+          contactNumber: '0755-99999999',
+          email: 'contact@tencent.com'
+        }
+      }),
+      prisma.enterprise.create({
+        data: {
+          name: '百度在线网络技术（北京）有限公司',
+          unifiedSocialCode: '91110000802100433B',
+          legalPerson: '李彦宏',
+          registeredCapital: 2000000000,
+          foundingDate: new Date('2012-03-20'),
+          businessScope: '互联网服务',
+          address: '北京市海淀区上地十街10号',
+          contactNumber: '010-77777777',
+          email: 'contact@baidu.com'
+        }
+      })
+    ])
 
-  // 批量插入企业数据
-  const createdEnterprises = await prisma.enterprise.createMany({
-    data: enterprises,
-  })
+    // 创建返税配置
+    const configs = await Promise.all([
+      prisma.taxRefundConfig.create({
+        data: {
+          name: '企业所得税',
+          rate: 45,
+          isActive: true
+        }
+      }),
+      prisma.taxRefundConfig.create({
+        data: {
+          name: '个人所得税',
+          rate: 40,
+          isActive: true
+        }
+      }),
+      prisma.taxRefundConfig.create({
+        data: {
+          name: '土地使用税',
+          rate: 35,
+          isActive: true
+        }
+      }),
+      prisma.taxRefundConfig.create({
+        data: {
+          name: '房产税',
+          rate: 30,
+          isActive: true
+        }
+      }),
+      prisma.taxRefundConfig.create({
+        data: {
+          name: '其他税费',
+          rate: 25,
+          isActive: true
+        }
+      }),
+      prisma.taxRefundConfig.create({
+        data: {
+          name: '总计',
+          rate: 35,
+          isActive: true
+        }
+      })
+    ])
 
-  // 获取所有企业
-  const allEnterprises = await prisma.enterprise.findMany()
-
-  // 为每个企业生成税收记录
-  const taxRecords = allEnterprises.flatMap((enterprise) => {
+    // 为每个企业创建税收记录
+    const taxTypes = ['企业所得税', '个人所得税', '土地使用税', '房产税', '其他税费']
     const currentYear = new Date().getFullYear()
-    const currentMonth = new Date().getMonth() + 1
     
-    // 为每个企业生成最近3个月的记录
-    return Array.from({ length: 3 }).map((_, index) => {
-      const month = currentMonth - index
-      const year = month <= 0 ? currentYear - 1 : currentYear
-      const adjustedMonth = month <= 0 ? month + 12 : month
+    for (const enterprise of enterprises) {
+      // 生成已处理的税收记录
+      for (let month = 1; month <= 6; month++) {
+        for (const taxType of taxTypes) {
+          const taxableIncome = Math.floor(Math.random() * 1000000) + 500000
+          const taxAmount = Math.floor(taxableIncome * 0.25)
+          
+          const taxRecord = await prisma.taxRecord.create({
+            data: {
+              enterpriseId: enterprise.id,
+              year: currentYear,
+              month,
+              taxableIncome,
+              taxAmount,
+              paidAmount: taxAmount,
+              taxType,
+              paymentStatus: '已缴纳',
+              dueDate: `${currentYear}-${String(month).padStart(2, '0')}-15`,
+              paymentDate: `${currentYear}-${String(month).padStart(2, '0')}-10`,
+              taxNumber: enterprise.unifiedSocialCode
+            }
+          })
+        }
 
-      const taxableIncome = faker.number.int({ min: 50000, max: 1000000 })
-      const taxAmount = taxableIncome * 0.25 // 假设25%的税率
-      const paidAmount = faker.helpers.arrayElement([
-        0, // 未缴纳
-        taxAmount * 0.5, // 部分缴纳
-        taxAmount, // 已缴纳
-      ])
+        // 为每月的税收记录创建返税记录
+        const monthRecords = await prisma.taxRecord.findMany({
+          where: {
+            enterpriseId: enterprise.id,
+            year: currentYear,
+            month,
+            taxRefundId: null
+          }
+        })
 
-      const paymentStatus = paidAmount === 0 
-        ? "未缴纳" 
-        : paidAmount === taxAmount 
-          ? "已缴纳" 
-          : "部分缴纳"
+        const totalTaxAmount = monthRecords.reduce((sum, record) => sum + record.taxAmount, 0)
+        const totalBaseAmount = monthRecords.reduce((sum, record) => sum + record.taxableIncome, 0)
 
-      return {
-        enterpriseId: enterprise.id,
-        year: year,
-        month: adjustedMonth,
-        taxableIncome: taxableIncome,
-        taxAmount: taxAmount,
-        paidAmount: paidAmount,
-        taxType: faker.helpers.arrayElement([
-          "增值税",
-          "企业所得税",
-          "个人所得税",
-          "城市维护建设税",
-        ]),
-        paymentStatus: paymentStatus,
-        dueDate: faker.date.future({ years: 1 }).toISOString(),
-        paymentDate: paymentStatus !== "未缴纳" 
-          ? faker.date.recent({ days: 30 }).toISOString()
-          : null,
-        remarks: faker.helpers.arrayElement([
-          null,
-          "已申请延期",
-          "分期缴纳",
-          "特殊政策减免",
-        ]),
+        const refund = await prisma.taxRefund.create({
+          data: {
+            enterpriseId: enterprise.id,
+            taxNumber: enterprise.unifiedSocialCode,
+            taxPeriod: `${currentYear}-${String(month).padStart(2, '0')}`,
+            taxAmount: totalTaxAmount,
+            baseAmount: totalBaseAmount,
+            refundRate: 35,
+            refundAmount: totalTaxAmount * 0.35,
+            personalAmount: monthRecords.find(r => r.taxType === '个人所得税')?.taxAmount * 0.4 || 0,
+            companyAmount: monthRecords.find(r => r.taxType === '企业所得税')?.taxAmount * 0.45 || 0,
+            landAmount: monthRecords.find(r => r.taxType === '土地使用税')?.taxAmount * 0.35 || 0,
+            propertyAmount: monthRecords.find(r => r.taxType === '房产税')?.taxAmount * 0.3 || 0,
+            otherAmount: monthRecords.find(r => r.taxType === '其他税费')?.taxAmount * 0.25 || 0,
+            totalAmount: totalTaxAmount * 0.35,
+            status: ['未处理', '处理中', '已处理'][Math.floor(Math.random() * 3)]
+          }
+        })
+
+        // 更新税收记录关联到返税记录
+        await prisma.taxRecord.updateMany({
+          where: {
+            id: {
+              in: monthRecords.map(r => r.id)
+            }
+          },
+          data: {
+            taxRefundId: refund.id
+          }
+        })
       }
-    })
-  })
 
-  // 批量插入税收记录
-  await prisma.taxRecord.createMany({
-    data: taxRecords,
-  })
-
-  // 为每个企业生成社保记录
-  const socialRecords = allEnterprises.flatMap((enterprise) => {
-    // 为每个企业生成1-5条员工社保记录
-    const employeeCount = faker.number.int({ min: 1, max: 5 })
-    return Array.from({ length: employeeCount }).map(() => {
-      const baseAmount = faker.number.int({ min: 3000, max: 20000 })
-      const personalRate = 0.105 // 个人缴费比例 10.5%
-      const companyRate = 0.285  // 企业缴费比例 28.5%
-      const personalAmount = baseAmount * personalRate
-      const companyAmount = baseAmount * companyRate
-      const totalAmount = personalAmount + companyAmount
-
-      const paymentStatus = faker.helpers.arrayElement([
-        "未缴纳",
-        "已缴纳",
-        "部分缴纳",
-      ])
-
-      return {
-        enterpriseId: enterprise.id,
-        employeeName: faker.person.fullName(),
-        idNumber: faker.string.numeric(18),
-        insuranceType: faker.helpers.arrayElement([
-          "养老保险",
-          "医疗保险",
-          "失业保险",
-          "工伤保险",
-          "生育保险",
-        ]),
-        baseAmount: baseAmount,
-        personalAmount: personalAmount,
-        companyAmount: companyAmount,
-        totalAmount: totalAmount,
-        paymentStatus: paymentStatus,
-        paymentDate: paymentStatus !== "未缴纳" 
-          ? faker.date.recent({ days: 30 }).toISOString()
-          : null,
+      // 生成未处理的税收记录（最近一个月）
+      for (const taxType of taxTypes) {
+        const taxableIncome = Math.floor(Math.random() * 1000000) + 500000
+        const taxAmount = Math.floor(taxableIncome * 0.25)
+        
+        await prisma.taxRecord.create({
+          data: {
+            enterpriseId: enterprise.id,
+            year: currentYear,
+            month: 7,
+            taxableIncome,
+            taxAmount,
+            paidAmount: taxAmount,
+            taxType,
+            paymentStatus: '已缴纳',
+            dueDate: `${currentYear}-07-15`,
+            paymentDate: `${currentYear}-07-10`,
+            taxNumber: enterprise.unifiedSocialCode
+          }
+        })
       }
-    })
-  })
+    }
 
-  // 批量插入社保记录
-  await prisma.socialRecord.createMany({
-    data: socialRecords,
-  })
-
-  console.log(`已成功生成：
-- ${enterprises.length}条企业数据
-- ${taxRecords.length}条税收记录
-- ${socialRecords.length}条社保记录`)
+    console.log('数据填充完成')
+  } catch (error) {
+    console.error('数据填充失败:', error)
+    throw error
+  }
 }
 
 main()
   .catch((e) => {
-    console.error("数据生成失败:", e)
+    console.error(e)
     process.exit(1)
   })
   .finally(async () => {
