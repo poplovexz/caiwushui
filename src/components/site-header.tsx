@@ -71,7 +71,7 @@ export function SiteHeader() {
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => signOut({ callbackUrl: "/(auth)/signin" })}
+            onClick={() => signOut()}
             className="text-sm font-medium text-gray-500 hover:text-gray-900"
           >
             退出登录

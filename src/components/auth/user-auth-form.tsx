@@ -16,6 +16,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
+import { useRouter, useSearchParams } from "next/navigation"
 
 const formSchema = z.object({
   email: z.string().email({
@@ -26,11 +27,11 @@ const formSchema = z.object({
   }),
 })
 
-interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-  callbackUrl?: string
-}
+interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export function UserAuthForm({ className, callbackUrl = "/", ...props }: UserAuthFormProps) {
+export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -45,11 +46,11 @@ export function UserAuthForm({ className, callbackUrl = "/", ...props }: UserAut
     setIsLoading(true)
 
     try {
+      const callbackUrl = searchParams?.get("callbackUrl") || "/"
       const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
         redirect: false,
-        callbackUrl,
       })
 
       if (result?.error) {
@@ -58,7 +59,8 @@ export function UserAuthForm({ className, callbackUrl = "/", ...props }: UserAut
       }
 
       toast.success("登录成功")
-      window.location.href = callbackUrl
+      router.push(callbackUrl)
+      router.refresh()
     } catch (error) {
       toast.error("登录失败，请稍后重试")
     } finally {

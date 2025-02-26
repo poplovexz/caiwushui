@@ -46,8 +46,7 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: "/signin",
-    error: "/error",
-    signOut: "/signin"
+    error: "/signin?error=true",
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -61,6 +60,18 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // 如果是内部路径，直接返回
+      if (url.startsWith("/")) {
+        return url
+      }
+      // 如果是完整的URL，检查是否为同源
+      if (new URL(url).origin === baseUrl) {
+        return url
+      }
+      // 默认重定向到首页
+      return "/"
     }
   },
   secret: process.env.NEXTAUTH_SECRET,

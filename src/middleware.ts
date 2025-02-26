@@ -8,10 +8,10 @@ export default withAuth(
     const path = req.nextUrl.pathname
 
     // 公开路由列表
-    const publicRoutes = ["/", "/auth/signin", "/auth/signup"]
+    const publicRoutes = ["/", "/signin"]
     
     // 如果是登录页且用户已登录，重定向到首页
-    if (path === "/auth/signin" && token) {
+    if (path === "/signin" && token) {
       return NextResponse.redirect(new URL("/", req.url))
     }
 
@@ -22,7 +22,7 @@ export default withAuth(
 
     // 如果用户未登录，重定向到登录页
     if (!token) {
-      const signInUrl = new URL("/auth/signin", req.url)
+      const signInUrl = new URL("/signin", req.url)
       signInUrl.searchParams.set("callbackUrl", path)
       return NextResponse.redirect(signInUrl)
     }
@@ -32,11 +32,19 @@ export default withAuth(
   },
   {
     pages: {
-      signIn: "/auth/signin",
+      signIn: "/signin",
     },
   }
 )
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"]
+  matcher: [
+    /*
+     * 匹配所有路径除了:
+     * 1. /api 开头的路径 (API 路由)
+     * 2. /_next 开头的路径 (Next.js 内部路由)
+     * 3. /favicon.ico (浏览器图标)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 }
