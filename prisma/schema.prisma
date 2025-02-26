@@ -10,6 +10,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN     // 系统管理员
+  MANAGER   // 企业管理员
+  USER      // 普通用户
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -46,10 +52,18 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("user")
-  password      String    // 添加密码字段
+  password      String?
+  role          UserRole  @default(USER)
+  roleId        String?   // 关联角色ID
+  assignedRole  Role?     @relation(fields: [roleId], references: [id])
+  status        String    @default("ACTIVE") // ACTIVE, INACTIVE, LOCKED
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+  importRecords UserImportRecord[] // 关联批量导入记录
+  operations    OperationLog[]      // 关联操作日志
 }
 
 model VerificationToken {
@@ -261,4 +275,91 @@ model TaxRefundConfig {
 
   @@index([name])
   @@index([isActive])
+}
+
+// 系统版本管理
+model SystemVersion {
+  id          String   @id @default(cuid())
+  version     String   // 版本号
+  description String   // 版本描述
+  changelog   String   // 变更日志
+  isActive    Boolean  @default(false) // 是否为当前激活版本
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 系统设置
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique // 设置键名
+  value       String   // 设置值
+  description String?  // 设置描述
+  category    String   // 设置分类
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 权限管理
+model Permission {
+  id          String       @id @default(cuid())
+  code        String       @unique // 权限代码
+  name        String       // 权限名称
+  description String?      // 权限描述
+  category    String       // 权限分类
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  roles       RolePermission[]
+}
+
+// 角色
+model Role {
+  id          String       @id @default(cuid())
+  code        String       @unique // 角色代码
+  name        String       // 角色名称
+  description String?      // 角色描述
+  isSystem    Boolean      @default(false) // 是否为系统角色
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       User[]       // 关联用户
+  permissions RolePermission[]
+}
+
+// 角色权限关联
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+// 用户批量导入记录
+model UserImportRecord {
+  id          String   @id @default(cuid())
+  filename    String   // 导入文件名
+  totalCount  Int      // 总记录数
+  successCount Int     // 成功导入数
+  failCount   Int      // 失败数
+  errors      Json?    // 错误记录
+  status      String   // 导入状态：PENDING, PROCESSING, COMPLETED, FAILED
+  createdBy   String   // 创建人ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [createdBy], references: [id])
+}
+
+// 操作日志
+model OperationLog {
+  id          String   @id @default(cuid())
+  userId      String   // 操作用户ID
+  action      String   // 操作类型
+  module      String   // 操作模块
+  description String   // 操作描述
+  ipAddress   String?  // IP地址
+  userAgent   String?  // 用户代理
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
 }

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, UserRole } from '@prisma/client'
 import { hash } from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -14,17 +14,68 @@ async function main() {
     await prisma.socialRecord.deleteMany()
     await prisma.enterprise.deleteMany()
     await prisma.user.deleteMany()
+    await prisma.role.deleteMany()
+    await prisma.permission.deleteMany()
 
-    // 创建测试用户
+    // 创建基础角色
+    const adminRole = await prisma.role.create({
+      data: {
+        code: 'admin',
+        name: '系统管理员',
+        description: '系统管理员角色',
+        isSystem: true,
+      }
+    })
+
+    // 创建基础权限
+    const permissions = await prisma.permission.createMany({
+      data: [
+        {
+          code: 'system:settings',
+          name: '系统设置',
+          category: 'system',
+          description: '系统设置权限'
+        },
+        {
+          code: 'user:manage',
+          name: '用户管理',
+          category: 'user',
+          description: '用户管理权限'
+        },
+        {
+          code: 'role:manage',
+          name: '角色管理',
+          category: 'role',
+          description: '角色管理权限'
+        }
+      ]
+    })
+
+    // 创建角色权限关联
+    const allPermissions = await prisma.permission.findMany()
+    await Promise.all(
+      allPermissions.map(permission =>
+        prisma.rolePermission.create({
+          data: {
+            roleId: adminRole.id,
+            permissionId: permission.id
+          }
+        })
+      )
+    )
+
+    // 创建管理员用户
     const hashedPassword = await hash('123456', 12)
     const user = await prisma.user.create({
       data: {
-        name: '管理员',
-        email: 'admin@example.com',
-        role: 'admin',
-        password: hashedPassword
+        name: "管理员",
+        email: "admin@example.com",
+        role: UserRole.ADMIN,
+        password: hashedPassword,
+        roleId: adminRole.id
       }
     })
+
     console.log('创建用户成功:', user.email)
 
     // 创建企业数据
